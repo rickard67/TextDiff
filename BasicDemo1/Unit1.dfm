@@ -10,19 +10,15 @@ object Form1: TForm1
   Font.Height = -12
   Font.Name = 'Arial'
   Font.Style = []
-  OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
-  PixelsPerInch = 96
   TextHeight = 15
   object Label1: TLabel
     Left = 23
     Top = 23
-    Width = 222
+    Width = 193
     Height = 15
-    Caption = 
-      '                                                                ' +
-      '          '
+    Caption = 'Type some text below and compare'
   end
   object PaintBox1: TPaintBox
     Left = 24
@@ -44,7 +40,7 @@ object Form1: TForm1
     Width = 320
     Height = 23
     TabOrder = 0
-    Text = 'Change the text here & then compare'
+    Text = 'Lorem ipsum aterium'
   end
   object Edit2: TEdit
     Left = 23
@@ -52,7 +48,7 @@ object Form1: TForm1
     Width = 320
     Height = 23
     TabOrder = 1
-    Text = 'Change the text here & then compare'
+    Text = 'Lohames in uto'
   end
   object Button1: TButton
     Left = 23

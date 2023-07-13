@@ -11,13 +11,11 @@ object Form1: TForm1
   Font.Name = 'Arial'
   Font.Style = []
   Menu = MainMenu1
-  OldCreateOrder = False
   Position = poScreenCenter
   OnActivate = FormActivate
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnResize = FormResize
-  PixelsPerInch = 96
   TextHeight = 15
   object Panel1: TPanel
     Left = 0
@@ -145,6 +143,22 @@ object Form1: TForm1
       object mnuIgnoreWhiteSpace: TMenuItem
         Caption = 'Ignore &White Space'
         OnClick = mnuIgnoreWhiteSpaceClick
+      end
+      object N3: TMenuItem
+        Caption = '-'
+      end
+      object mnuNP: TMenuItem
+        Caption = 'O(NP) Sequence Comparison Algorithm'
+        Checked = True
+        GroupIndex = 10
+        RadioItem = True
+        OnClick = mnuNPClick
+      end
+      object mnuND: TMenuItem
+        Caption = 'O(ND) Difference Algorithm'
+        GroupIndex = 10
+        RadioItem = True
+        OnClick = mnuNDClick
       end
     end
   end

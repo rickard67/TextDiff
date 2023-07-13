@@ -13,6 +13,7 @@ uses
   FGL,
 {$ENDIF}
   SysUtils,
+  Types,
   Variants,
   Classes,
   Graphics,
@@ -21,6 +22,7 @@ uses
   Dialogs,
   StdCtrls,
   Math,
+  DiffTypes,
   Diff,
   ExtCtrls,
   Grids,
@@ -54,6 +56,9 @@ type
     mnuView: TMenuItem;
     PreviousChanges1: TMenuItem;
     NextChanges1: TMenuItem;
+    N3: TMenuItem;
+    mnuNP: TMenuItem;
+    mnuND: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure Open11Click(Sender: TObject);
     procedure Open21Click(Sender: TObject);
@@ -69,8 +74,11 @@ type
     procedure PreviousChanges1Click(Sender: TObject);
     procedure NextChanges1Click(Sender: TObject);
     procedure FormActivate(Sender: TObject);
+    procedure mnuNDClick(Sender: TObject);
+    procedure mnuNPClick(Sender: TObject);
   private
     Diff: TDiff;
+    FDiffAlgorithm: TDiffAlgorithm;
     source1, source2: TStringList;
     result1, result2: TStringList;
     {$IFDEF FPC}
@@ -110,6 +118,7 @@ begin
   hashlist2 := TList<Cardinal>.Create;
   {$ENDIF}
 
+  FDiffAlgorithm := algNP;
   ResultGrid.ColWidths[0] := 40;
   ResultGrid.ColWidths[2] := 40;
   ResultGrid.Canvas.Font := ResultGrid.Font;
@@ -281,7 +290,7 @@ begin
     //this is where it all happens  ...
 
     //nb: TList.list is a pointer to the bottom of the list's integer array
-    Diff.Execute(hashlist1, hashlist2);
+    Diff.Execute(hashlist1, hashlist2, FDiffAlgorithm);
 
     if Diff.Cancelled then exit;
 
@@ -510,6 +519,23 @@ begin
 
   ResultGrid.Row := row;
 end;
+
+procedure TForm1.mnuNDClick(Sender: TObject);
+begin
+  mnuND.Checked := not mnuND.Checked;
+  FDiffAlgorithm := algND;
+  Clear(false,false);
+  mnuCompareClick(nil);
+end;
+
+procedure TForm1.mnuNPClick(Sender: TObject);
+begin
+  mnuNP.Checked := not mnuNP.Checked;
+  FDiffAlgorithm := algNP;
+  Clear(false,false);
+  mnuCompareClick(nil);
+end;
+
 //------------------------------------------------------------------------------
 
 end.

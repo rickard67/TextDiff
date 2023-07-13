@@ -38,6 +38,7 @@ implementation
 
 uses
   {$ifndef fpc}
+  Winapi.Windows,
   System.Character;
   {$else}
   Character;

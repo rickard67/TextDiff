@@ -18,6 +18,7 @@ uses
   Forms,
   Dialogs,
   StdCtrls,
+  DiffTypes,
   Diff,
   ExtCtrls;
 
