@@ -1,0 +1,10 @@
+
+*.dcu
+BasicDemo2/__history/*.*
+BasicDemo1/__history/*.*
+*.identcache
+*.local
+*.dproj
+src/__history/*.*
+BasicDemo1/*.dproj
+BasicDemo2/*.dproj
