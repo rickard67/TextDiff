@@ -51,6 +51,7 @@ uses
   Forms,
   Classes,
   DiffTypes,
+  DiffBase,
   Diff_ND,
   Diff_NP;
 
@@ -60,20 +61,19 @@ type
     FCancelled: boolean;
     FExecuting: boolean;
     FDiffAlgorithm: TDiffAlgorithm;
-    FDiff_ND: TNDDiff;
-    FDiff_NP: TNPDiff;
     function GetCompareCount: integer;
     function GetCompare(index: integer): TCompareRec;
     function GetDiffStats: TDiffStats;
+  private
+    FAlgos: array[TDiffAlgorithm] of TDiffBase;
   public
     constructor Create(aOwner: TComponent); override;
-    destructor Destroy; override;
 
     // Compare strings or list of Cardinals ...
     {$IFDEF FPC}
     function Execute(const alist1, alist2: TIntegerList): boolean; overload;
     {$ELSE}
-    function Execute(const alist1, alist2: TList<Cardinal>; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
+    function Execute(const alist1, alist2: TCompareList; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
         overload;
     {$ENDIF}
     function Execute(const s1, s2: string; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean; overload;
@@ -84,7 +84,7 @@ type
     property Cancelled: boolean read FCancelled;
     property Count: integer read GetCompareCount;
     property Compares[index: integer]: TCompareRec read GetCompare; default;
-    property DiffAlgorithm: TDiffAlgorithm read FDiffAlgorithm write FDiffAlgorithm;
+    property DiffAlgorithm: TDiffAlgorithm read FDiffAlgorithm write FDiffAlgorithm default algNP;
     property DiffStats: TDiffStats read GetDiffStats;
   end;
 
@@ -100,17 +100,9 @@ end;
 constructor TDiff.Create(aOwner: TComponent);
 begin
   inherited;
-  FDiff_ND := TNDDiff.Create(AOwner);
-  FDiff_NP := TNPDiff.Create(AOwner);
+  FAlgos[algND] := TNDDiff.Create(Self);
+  FAlgos[algNP] := TNPDiff.Create(Self);
   FDiffAlgorithm := algNP;
-end;
-//------------------------------------------------------------------------------
-
-destructor TDiff.Destroy;
-begin
-//  FDiff_ND.Free;
-//  FDiff_NP.Free;
-  inherited;
 end;
 //------------------------------------------------------------------------------
 
@@ -122,10 +114,7 @@ begin
   FExecuting := true;
   FDiffAlgorithm := aDiffAlgorithm;
   try
-    if aDiffAlgorithm = algND then
-      FDiff_ND.Execute(s1, s2)
-    else if aDiffAlgorithm = algNP then
-      FDiff_NP.Execute(s1, s2);
+    Result := FAlgos[aDiffAlgorithm].Execute(s1,s2);
   finally
     FExecuting := false;
   end;
@@ -135,7 +124,7 @@ end;
 {$IFDEF FPC}
 function TDiff.Execute(const alist1, alist2: TIntegerList; const aDiffAlgorithm: TDiffAlgorithm): boolean;
 {$ELSE}
-function TDiff.Execute(const alist1, alist2: TList<Cardinal>; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
+function TDiff.Execute(const alist1, alist2: TCompareList; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
 {$ENDIF}
 begin
   Result := not FExecuting;
@@ -144,10 +133,7 @@ begin
   FExecuting := true;
   FDiffAlgorithm := aDiffAlgorithm;
   try
-    if aDiffAlgorithm = algND then
-      FDiff_ND.Execute(alist1, alist2)
-    else if aDiffAlgorithm = algNP then
-      FDiff_NP.Execute(alist1, alist2);
+    Result := FAlgos[FDiffAlgorithm].Execute(alist1,alist2);
   finally
     FExecuting := false;
   end;
@@ -156,45 +142,30 @@ end;
 
 function TDiff.GetCompareCount: integer;
 begin
-  if FDiffAlgorithm = algND then
-    Result := FDiff_ND.CompareList.Count
-  else
-    Result := FDiff_NP.CompareList.count;
+  Result := FAlgos[FDiffAlgorithm].CompareList.Count;
 end;
 //------------------------------------------------------------------------------
 
 function TDiff.GetCompare(index: integer): TCompareRec;
 begin
-  if FDiffAlgorithm = algND then
-    Result := PCompareRec(FDiff_ND.CompareList[index])^
-  else if FDiffAlgorithm = algNP then
-    Result := PCompareRec(FDiff_NP.CompareList[index])^;
+  Result := PCompareRec(FAlgos[FDiffAlgorithm].CompareList[index])^;
 end;
 //------------------------------------------------------------------------------
 
 procedure TDiff.Cancel;
 begin
   FCancelled := True;
-  if FDiffAlgorithm = algND then
-    FDiff_ND.Cancel
-  else if FDiffAlgorithm = algNP then
-    FDiff_NP.Cancel;
+  FAlgos[FDiffAlgorithm].Cancel;
 end;
 
 procedure TDiff.Clear;
 begin
-  if FDiffAlgorithm = algND then
-    FDiff_ND.Clear
-  else if FDiffAlgorithm = algNP then
-    FDiff_NP.Clear;
+  FAlgos[FDiffAlgorithm].Clear;
 end;
 
 function TDiff.GetDiffStats: TDiffStats;
 begin
-  if FDiffAlgorithm = algND then
-    Result := FDiff_ND.DiffStats
-  else if FDiffAlgorithm = algNP then
-    Result := FDiff_NP.DiffStats;
+  Result := FAlgos[FDiffAlgorithm].DiffStats;
 end;
 
 //------------------------------------------------------------------------------

@@ -5,7 +5,7 @@ unit Diff_ND;
 {$ENDIF}
 
 (*******************************************************************************
-* Component         TNDDiff                                                      *
+* Component         TNDDiff                                                    *
 * Version:          5.0                                                        *
 * Date:             18 May 2020                                                *
 * Compilers:        Delphi 10.x                                                *
@@ -14,13 +14,13 @@ unit Diff_ND;
 * Updated by:       Rickard Johansson (RJ TextEd)                              *
 *                                                                              *
 * Licence to use, terms and conditions:                                        *
-*                   The code in the TNDDiff component is released as freeware    *
+*                   The code in the TNDDiff component is released as freeware  *
 *                   provided you agree to the following terms & conditions:    *
 *                   1. the copyright notice, terms and conditions are          *
 *                   left unchanged                                             *
 *                   2. modifications to the code by other authors must be      *
 *                   clearly documented and accompanied by the modifier's name. *
-*                   3. the TNDDiff component may be freely compiled into binary  *
+*                   3. the TNDDiff component may be freely compiled into binary*
 *                   format and no acknowledgement is required. However, a      *
 *                   discrete acknowledgement would be appreciated (eg. in a    *
 *                   program's 'About Box').                                    *
@@ -67,22 +67,16 @@ uses
   Math,
   Forms,
   Classes,
-  DiffTypes;
-
-const
-  //Maximum realistic deviation from centre diagonal vector ...
-  MAX_DIAGONAL = $FFFFFF; //~16 million
+  DiffTypes,
+  DiffBase;
 
 type
   {$IFDEF FPC}
   TIntegerList = TFPGList<Cardinal>;
   {$ENDIF}
 
-  TNDDiff = class(TComponent)
+  TNDDiff = class(TDiffBase)
   private
-    FCompareList: TList;
-    FCancelled: boolean;
-    FExecuting: boolean;
     FDiagBuffer, bDiagBuffer: pointer;
     FStr1: string;
     FStr2: string;
@@ -95,7 +89,6 @@ type
     {$ENDIF}
     LastCompareRec: TCompareRec;
     fDiag, bDiag: PDiags;
-    fDiffStats: TDiffStats;
     procedure InitDiagArrays(MaxOscill, len1, len2: integer);
     //nb: To optimize speed, separate functions are called for either
     //integer or character compares ...
@@ -106,220 +99,187 @@ type
 
     function GetCompareCount: integer;
     function GetCompare(index: integer): TCompareRec;
-  public
-    constructor Create(aOwner: TComponent); override;
-    destructor Destroy; override;
-
+  protected
     // Compare strings or list of Cardinals ...
     {$IFDEF FPC}
-    function Execute(const alist1, alist2: TIntegerList): boolean; overload;
+    function InternalExecute(const alist1, alist2: TIntegerList): boolean; override;
     {$ELSE}
-    function Execute(const alist1, alist2: TList<Cardinal>): boolean; overload;
+    function InternalExecute(const alist1, alist2: TCompareList): boolean; override;
     {$ENDIF}
-    function Execute(const s1, s2: string): boolean; overload;
+    function InternalExecute(const s1, s2: string): boolean; override;
+  public
+    destructor Destroy; override;
 
-    // Cancel allows interrupting excessively prolonged comparisons
-    procedure Cancel;
-    procedure Clear;
-
-    property Cancelled: boolean read fCancelled;
-    property CompareList: TList read FCompareList write FCompareList;
     property Count: integer read GetCompareCount;
     property Compares[index: integer]: TCompareRec read GetCompare; default;
-    property DiffStats: TDiffStats read fDiffStats;
   end;
 
 implementation
 
-constructor TNDDiff.Create(aOwner: TComponent);
-begin
-  inherited;
-  fCompareList := TList.create;
-end;
 //------------------------------------------------------------------------------
 
 destructor TNDDiff.Destroy;
 begin
   Clear;
-  fCompareList.free;
   inherited;
 end;
 //------------------------------------------------------------------------------
 
-function TNDDiff.Execute(const s1, s2: string): boolean;
+function TNDDiff.InternalExecute(const s1, s2: string): boolean;
 var
   maxOscill, x1,x2, savedLen: integer;
   compareRec: PCompareRec;
   len1,len2: Integer;
 begin
-  result := not fExecuting;
-  if not result then exit;
-  fExecuting := true;
-  fCancelled := false;
-  try
-    Clear;
-    len1 := Length(s1);
-    len2 := Length(s2);
+  Result := True;
+  len1 := Length(s1);
+  len2 := Length(s2);
 
-    //save first string length for later (ie for any trailing matches) ...
-    savedLen := len1;
+  //save first string length for later (ie for any trailing matches) ...
+  savedLen := len1;
 
-    //setup the character arrays ...
-    FStr1 := s1;
-    FStr2 := s2;
+  //setup the character arrays ...
+  FStr1 := s1;
+  FStr2 := s2;
 
-    //ignore top matches ...
-    x1:= 1; x2 := 1;
-    while (len1 > 0) and (len2 > 0) and (FStr1[len1] = FStr2[len2]) do
-    begin
-      dec(len1); dec(len2);
-    end;
-
-    //if something doesn't match ...
-    if (len1 <> 0) or (len2 <> 0) then
-    begin
-      //ignore bottom of matches too ...
-      while (len1 > 0) and (len2 > 0) and (x1 > 0) and (x2 > 0) and (x1 <= Length(FStr1)) and (x2 <= Length(FStr2)) and (FStr1[x1] = FStr2[x2]) do
-      begin
-        dec(len1); dec(len2);
-        inc(x1); inc(x2);
-      end;
-
-      maxOscill := min(max(len1,len2), MAX_DIAGONAL);
-      fCompareList.Capacity := len1 + len2;
-
-      //nb: the Diag arrays are extended by 1 at each end to avoid testing
-      //for array limits. Hence '+3' because will also includes Diag[0] ...
-      GetMem(fDiagBuffer, sizeof(integer)*(maxOscill*2+3));
-      GetMem(bDiagBuffer, sizeof(integer)*(maxOscill*2+3));
-      try
-        RecursiveDiffChr(x1, x2, len1, len2);
-      finally
-        freeMem(fDiagBuffer);
-        freeMem(bDiagBuffer);
-      end;
-    end;
-
-    if fCancelled then
-    begin
-      result := false;
-      Clear;
-      exit;
-    end;
-
-    //finally, append any trailing matches onto compareList ...
-    if LastCompareRec.oldIndex1 < 0 then LastCompareRec.oldIndex1 := 0;
-    if LastCompareRec.oldIndex2 < 0 then LastCompareRec.oldIndex2 := 0;
-    while (LastCompareRec.oldIndex1 < savedLen) do
-    begin
-      with LastCompareRec do
-      begin
-        Kind := ckNone;
-        inc(oldIndex1);
-        inc(oldIndex2);
-        if (oldIndex1 > 0) and (oldIndex1 <= Length(FStr1)) then
-          chr1 := FStr1[oldIndex1];
-        if (oldIndex2 > 0) and (oldIndex2 <= Length(FStr2)) then
-          chr2 := FStr2[oldIndex2];
-      end;
-      New(compareRec);
-      compareRec^ := LastCompareRec;
-      fCompareList.Add(compareRec);
-      inc(fDiffStats.matches);
-    end;
-  finally
-    fExecuting := false;
+  //ignore top matches ...
+  x1:= 1; x2 := 1;
+  while (len1 > 0) and (len2 > 0) and (FStr1[len1] = FStr2[len2]) do
+  begin
+    dec(len1); dec(len2);
   end;
 
+  //if something doesn't match ...
+  if (len1 <> 0) or (len2 <> 0) then
+  begin
+    //ignore bottom of matches too ...
+    while (len1 > 0) and (len2 > 0) and (x1 > 0) and (x2 > 0) and (x1 <= Length(FStr1)) and (x2 <= Length(FStr2)) and (FStr1[x1] = FStr2[x2]) do
+    begin
+      dec(len1); dec(len2);
+      inc(x1); inc(x2);
+    end;
+
+    maxOscill := min(max(len1,len2), MAX_DIAGONAL);
+    CompareList.Capacity := len1 + len2;
+
+    //nb: the Diag arrays are extended by 1 at each end to avoid testing
+    //for array limits. Hence '+3' because will also includes Diag[0] ...
+    GetMem(fDiagBuffer, sizeof(integer)*(maxOscill*2+3));
+    GetMem(bDiagBuffer, sizeof(integer)*(maxOscill*2+3));
+    try
+      RecursiveDiffChr(x1, x2, len1, len2);
+    finally
+      freeMem(fDiagBuffer);
+      freeMem(bDiagBuffer);
+    end;
+  end;
+
+  if Cancelled then
+  begin
+    result := false;
+    Clear;
+    exit;
+  end;
+
+  //finally, append any trailing matches onto compareList ...
+  if LastCompareRec.oldIndex1 < 0 then LastCompareRec.oldIndex1 := 0;
+  if LastCompareRec.oldIndex2 < 0 then LastCompareRec.oldIndex2 := 0;
+  while (LastCompareRec.oldIndex1 < savedLen) do
+  begin
+    with LastCompareRec do
+    begin
+      Kind := ckNone;
+      inc(oldIndex1);
+      inc(oldIndex2);
+      if (oldIndex1 > 0) and (oldIndex1 <= Length(FStr1)) then
+        chr1 := FStr1[oldIndex1];
+      if (oldIndex2 > 0) and (oldIndex2 <= Length(FStr2)) then
+        chr2 := FStr2[oldIndex2];
+    end;
+    New(compareRec);
+    compareRec^ := LastCompareRec;
+    CompareList.Add(compareRec);
+    IncMatches;
+  end;
 end;
 //------------------------------------------------------------------------------
 
 {$IFDEF FPC}
-function TNDDiff.Execute(const alist1, alist2: TIntegerList): boolean;
+function TNDDiff.InternalExecute(const alist1, alist2: TIntegerList): boolean;
 {$ELSE}
-function TNDDiff.Execute(const alist1, alist2: TList<Cardinal>): boolean;
+function TNDDiff.InternalExecute(const alist1, alist2: TCompareList): boolean;
 {$ENDIF}
 var
   maxOscill, x1,x2, savedLen: integer;
   compareRec: PCompareRec;
   len1,len2: Integer;
 begin
-  result := not fExecuting;
-  if not result then exit;
-  fExecuting := true;
-  fCancelled := false;
-  try
-    Clear;
+  Result := True;
+  //setup the character arrays ...
+  FList1 := alist1;
+  FList2 := alist2;
+  len1 := FList1.Count;
+  len2 := FList2.Count;
 
-    //setup the character arrays ...
-    FList1 := alist1;
-    FList2 := alist2;
-    len1 := FList1.Count;
-    len2 := FList2.Count;
+  //save first string length for later (ie for any trailing matches) ...
+  savedLen := len1-1;
 
-    //save first string length for later (ie for any trailing matches) ...
-    savedLen := len1-1;
-
-    //ignore top matches ...
-    x1:= 0; x2 := 0;
-    while (len1 > 0) and (len2 > 0) and (FList1[len1-1] = FList2[len2-1]) do
-    begin
-      dec(len1); dec(len2);
-    end;
-
-    //if something doesn't match ...
-    if (len1 <> 0) or (len2 <> 0) then
-    begin
-
-      //ignore bottom of matches too ...
-      while (len1 > 0) and (len2 > 0) and (FList1[x1] = FList2[x2]) do
-      begin
-        dec(len1); dec(len2);
-        inc(x1); inc(x2);
-      end;
-
-      maxOscill := min(max(len1,len2), MAX_DIAGONAL);
-      fCompareList.Capacity := len1 + len2;
-
-      //nb: the Diag arrays are extended by 1 at each end to avoid testing
-      //for array limits. Hence '+3' because will also includes Diag[0] ...
-      GetMem(fDiagBuffer, sizeof(integer)*(maxOscill*2+3));
-      GetMem(bDiagBuffer, sizeof(integer)*(maxOscill*2+3));
-      try
-        RecursiveDiffInt(x1, x2, len1, len2);
-      finally
-        freeMem(fDiagBuffer);
-        freeMem(bDiagBuffer);
-      end;
-    end;
-
-    if fCancelled then
-    begin
-      result := false;
-      Clear;
-      exit;
-    end;
-
-    //finally, append any trailing matches onto compareList ...
-    while (LastCompareRec.oldIndex1 < savedLen) do
-    begin
-      with LastCompareRec do
-      begin
-        Kind := ckNone;
-        inc(oldIndex1);
-        inc(oldIndex2);
-        int1 := Integer(FList1[oldIndex1]);
-        int2 := Integer(FList2[oldIndex2]);
-      end;
-      New(compareRec);
-      compareRec^ := LastCompareRec;
-      fCompareList.Add(compareRec);
-      inc(fDiffStats.matches);
-    end;
-  finally
-    fExecuting := false;
+  //ignore top matches ...
+  x1:= 0; x2 := 0;
+  while (len1 > 0) and (len2 > 0) and (FList1[len1-1] = FList2[len2-1]) do
+  begin
+    dec(len1); dec(len2);
   end;
 
+  //if something doesn't match ...
+  if (len1 <> 0) or (len2 <> 0) then
+  begin
+
+    //ignore bottom of matches too ...
+    while (len1 > 0) and (len2 > 0) and (FList1[x1] = FList2[x2]) do
+    begin
+      dec(len1); dec(len2);
+      inc(x1); inc(x2);
+    end;
+
+    maxOscill := min(max(len1,len2), MAX_DIAGONAL);
+    CompareList.Capacity := len1 + len2;
+
+    //nb: the Diag arrays are extended by 1 at each end to avoid testing
+    //for array limits. Hence '+3' because will also includes Diag[0] ...
+    GetMem(fDiagBuffer, sizeof(integer)*(maxOscill*2+3));
+    GetMem(bDiagBuffer, sizeof(integer)*(maxOscill*2+3));
+    try
+      RecursiveDiffInt(x1, x2, len1, len2);
+    finally
+      freeMem(fDiagBuffer);
+      freeMem(bDiagBuffer);
+    end;
+  end;
+
+  if Cancelled then
+  begin
+    result := false;
+    Clear;
+    exit;
+  end;
+
+  //finally, append any trailing matches onto compareList ...
+  while (LastCompareRec.oldIndex1 < savedLen) do
+  begin
+    with LastCompareRec do
+    begin
+      Kind := ckNone;
+      inc(oldIndex1);
+      inc(oldIndex2);
+      int1 := Integer(FList1[oldIndex1]);
+      int2 := Integer(FList2[oldIndex2]);
+    end;
+    New(compareRec);
+    compareRec^ := LastCompareRec;
+    CompareList.Add(compareRec);
+    IncMatches;
+  end;
 end;
 //------------------------------------------------------------------------------
 
@@ -345,7 +305,7 @@ begin
   //nb: the possible depth of recursion here is most unlikely to cause
   //    problems with stack overflows.
 //  application.processmessages;
-  if fCancelled then exit;
+  if Cancelled then exit;
 
   if (len1 = 0) then
   begin
@@ -375,7 +335,7 @@ begin
     if (Oscill mod 200) = 0 then
     begin
       application.processmessages;
-      if fCancelled then exit;
+      if Cancelled then exit;
     end;
 
     //do forward oscillation (keeping diag within assigned grid)...
@@ -461,7 +421,7 @@ begin
   //nb: the possible depth of recursion here is most unlikely to cause
   //    problems with stack overflows.
 //  application.processmessages;
-  if fCancelled then exit;
+  if Cancelled then exit;
 
   if (len1 = 0) then
   begin
@@ -493,7 +453,7 @@ begin
     if (Oscill mod 200) = 0 then
     begin
       application.processmessages;
-      if fCancelled then exit;
+      if Cancelled then exit;
     end;
 
     //do forward oscillation (keeping diag within assigned grid)...
@@ -569,32 +529,15 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-procedure TNDDiff.Clear;
-var
-  i: integer;
-begin
-  for i := 0 to fCompareList.Count-1 do
-    dispose(PCompareRec(fCompareList[i]));
-  fCompareList.clear;
-  LastCompareRec.Kind := ckNone;
-  LastCompareRec.oldIndex1 := -1;
-  LastCompareRec.oldIndex2 := -1;
-  fDiffStats.matches := 0;
-  fDiffStats.adds := 0;
-  fDiffStats.deletes :=0;
-  fDiffStats.modifies :=0;
-end;
-//------------------------------------------------------------------------------
-
 function TNDDiff.GetCompareCount: integer;
 begin
-  result := fCompareList.count;
+  result := CompareList.count;
 end;
 //------------------------------------------------------------------------------
 
 function TNDDiff.GetCompare(index: integer): TCompareRec;
 begin
-  result := PCompareRec(fCompareList[index])^;
+  result := PCompareRec(CompareList[index])^;
 end;
 //------------------------------------------------------------------------------
 
@@ -622,8 +565,8 @@ begin
     end;
     New(compareRec);
     compareRec^ := LastCompareRec;
-    fCompareList.Add(compareRec);
-    inc(fDiffStats.matches);
+    CompareList.Add(compareRec);
+    IncMatches;
   end;
 
   case ChangeKind of
@@ -640,8 +583,8 @@ begin
         end;
         New(compareRec);
         compareRec^ := LastCompareRec;
-        FCompareList.Add(compareRec);
-        inc(FDiffStats.matches);
+        CompareList.Add(compareRec);
+        IncMatches;
       end;
     ckAdd :
       begin
@@ -654,17 +597,17 @@ begin
             //and convert them to modifies ...
             if Kind = ckDelete then
             begin
-              j := fCompareList.Count -1;
-              while (j > 0) and (PCompareRec(fCompareList[j-1]).Kind = ckDelete) do
+              j := CompareList.Count -1;
+              while (j > 0) and (PCompareRec(CompareList[j-1]).Kind = ckDelete) do
                 dec(j);
-              PCompareRec(fCompareList[j]).Kind := ckModify;
-              dec(fDiffStats.deletes);
-              inc(fDiffStats.modifies);
+              PCompareRec(CompareList[j]).Kind := ckModify;
+              DecDeletes;
+              IncModifies;
               inc(LastCompareRec.oldIndex2);
-              PCompareRec(fCompareList[j]).oldIndex2 := LastCompareRec.oldIndex2;
+              PCompareRec(CompareList[j]).oldIndex2 := LastCompareRec.oldIndex2;
               if (oldIndex2 > 0) and (oldIndex2 <= Length(FStr2)) then
-                PCompareRec(fCompareList[j]).chr2 := FStr2[oldIndex2];
-              if j = fCompareList.Count-1 then LastCompareRec.Kind := ckModify;
+                PCompareRec(CompareList[j]).chr2 := FStr2[oldIndex2];
+              if j = CompareList.Count-1 then LastCompareRec.Kind := ckModify;
               continue;
             end;
 
@@ -676,8 +619,8 @@ begin
           end;
           New(compareRec);
           compareRec^ := LastCompareRec;
-          fCompareList.Add(compareRec);
-          inc(fDiffStats.adds);
+          CompareList.Add(compareRec);
+          IncAdds;
         end;
       end;
     ckDelete :
@@ -691,17 +634,17 @@ begin
             //and convert them to modifies ...
             if Kind = ckAdd then
             begin
-              j := fCompareList.Count -1;
-              while (j > 0) and (PCompareRec(fCompareList[j-1]).Kind = ckAdd) do
+              j := CompareList.Count -1;
+              while (j > 0) and (PCompareRec(CompareList[j-1]).Kind = ckAdd) do
                 dec(j);
-              PCompareRec(fCompareList[j]).Kind := ckModify;
-              dec(fDiffStats.adds);
-              inc(fDiffStats.modifies);
+              PCompareRec(CompareList[j]).Kind := ckModify;
+              DecAdds;
+              IncModifies;
               inc(LastCompareRec.oldIndex1);
-              PCompareRec(fCompareList[j]).oldIndex1 := LastCompareRec.oldIndex1;
+              PCompareRec(CompareList[j]).oldIndex1 := LastCompareRec.oldIndex1;
               if (oldIndex1 > 0) and (oldIndex1 <= Length(FStr1)) then
-                PCompareRec(fCompareList[j]).chr1 := FStr1[oldIndex1];
-              if j = fCompareList.Count-1 then LastCompareRec.Kind := ckModify;
+                PCompareRec(CompareList[j]).chr1 := FStr1[oldIndex1];
+              if j = CompareList.Count-1 then LastCompareRec.Kind := ckModify;
               continue;
             end;
 
@@ -713,8 +656,8 @@ begin
           end;
           New(compareRec);
           compareRec^ := LastCompareRec;
-          fCompareList.Add(compareRec);
-          inc(fDiffStats.deletes);
+          CompareList.Add(compareRec);
+          IncDeletes;
         end;
       end;
   end;
@@ -741,8 +684,8 @@ begin
     end;
     New(compareRec);
     compareRec^ := LastCompareRec;
-    fCompareList.Add(compareRec);
-    inc(fDiffStats.matches);
+    CompareList.Add(compareRec);
+    IncMatches;
   end;
 
   case ChangeKind of
@@ -757,16 +700,16 @@ begin
             //and convert them to modifies ...
             if Kind = ckDelete then
             begin
-              j := fCompareList.Count -1;
-              while (j > 0) and (PCompareRec(fCompareList[j-1]).Kind = ckDelete) do
+              j := CompareList.Count -1;
+              while (j > 0) and (PCompareRec(CompareList[j-1]).Kind = ckDelete) do
                 dec(j);
-              PCompareRec(fCompareList[j]).Kind := ckModify;
-              dec(fDiffStats.deletes);
-              inc(fDiffStats.modifies);
+              PCompareRec(CompareList[j]).Kind := ckModify;
+              DecDeletes;
+              IncModifies;
               inc(LastCompareRec.oldIndex2);
-              PCompareRec(fCompareList[j]).oldIndex2 := LastCompareRec.oldIndex2;
-              PCompareRec(fCompareList[j]).int2 := Integer(FList2[oldIndex2]);
-              if j = fCompareList.Count-1 then LastCompareRec.Kind := ckModify;
+              PCompareRec(CompareList[j]).oldIndex2 := LastCompareRec.oldIndex2;
+              PCompareRec(CompareList[j]).int2 := Integer(FList2[oldIndex2]);
+              if j = CompareList.Count-1 then LastCompareRec.Kind := ckModify;
               continue;
             end;
 
@@ -778,8 +721,8 @@ begin
           end;
           New(compareRec);
           compareRec^ := LastCompareRec;
-          fCompareList.Add(compareRec);
-          inc(fDiffStats.adds);
+          CompareList.Add(compareRec);
+          IncAdds;
         end;
       end;
     ckDelete :
@@ -793,16 +736,16 @@ begin
             //and convert them to modifies ...
             if Kind = ckAdd then
             begin
-              j := fCompareList.Count -1;
-              while (j > 0) and (PCompareRec(fCompareList[j-1]).Kind = ckAdd) do
+              j := CompareList.Count -1;
+              while (j > 0) and (PCompareRec(CompareList[j-1]).Kind = ckAdd) do
                 dec(j);
-              PCompareRec(fCompareList[j]).Kind := ckModify;
-              dec(fDiffStats.adds);
-              inc(fDiffStats.modifies);
+              PCompareRec(CompareList[j]).Kind := ckModify;
+              DecAdds;
+              IncModifies;
               inc(LastCompareRec.oldIndex1);
-              PCompareRec(fCompareList[j]).oldIndex1 := LastCompareRec.oldIndex1;
-              PCompareRec(fCompareList[j]).int1 := Integer(FList1[oldIndex1]);
-              if j = fCompareList.Count-1 then LastCompareRec.Kind := ckModify;
+              PCompareRec(CompareList[j]).oldIndex1 := LastCompareRec.oldIndex1;
+              PCompareRec(CompareList[j]).int1 := Integer(FList1[oldIndex1]);
+              if j = CompareList.Count-1 then LastCompareRec.Kind := ckModify;
               continue;
             end;
 
@@ -814,17 +757,11 @@ begin
           end;
           New(compareRec);
           compareRec^ := LastCompareRec;
-          fCompareList.Add(compareRec);
-          inc(fDiffStats.deletes);
+          CompareList.Add(compareRec);
+          IncDeletes;
         end;
       end;
   end;
-end;
-//------------------------------------------------------------------------------
-
-procedure TNDDiff.Cancel;
-begin
-  fCancelled := true;
 end;
 //------------------------------------------------------------------------------
 
