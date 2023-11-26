@@ -27,7 +27,8 @@ uses
   ExtCtrls,
   Grids,
   Menus,
-  ComCtrls;
+  ComCtrls,
+  DiffBase;
 
 type
   {$IFDEF FPC}
@@ -84,7 +85,7 @@ type
     {$IFDEF FPC}
     hashlist1, hashlist2: TIntegerList;
     {$ELSE}
-    hashlist1, hashlist2: TList<Cardinal>;
+    hashlist1, hashlist2: TCompareList;
     {$ENDIF}
     procedure Clear(aleft,aright: boolean);
     procedure BuildHashList(left,right: boolean);
@@ -114,8 +115,8 @@ begin
   hashlist1 := TIntegerList.Create;
   hashlist2 := TIntegerList.Create;
   {$ELSE}
-  hashlist1 := TList<Cardinal>.Create;
-  hashlist2 := TList<Cardinal>.Create;
+  hashlist1 := TCompareList.Create;
+  hashlist2 := TCompareList.Create;
   {$ENDIF}
 
   FDiffAlgorithm := algNP;

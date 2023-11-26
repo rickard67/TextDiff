@@ -149,7 +149,7 @@ begin
     j := 1;
     while i <= len do
     begin
-      if not IsWhiteSpace(line[i]) then
+      if not {$IFDEF FPC} IsWhiteSpace(line[i]) {$ELSE} line[i].IsWhiteSpace{$ENDIF}then
       begin
         s[j] := line[i];
         inc(j);
