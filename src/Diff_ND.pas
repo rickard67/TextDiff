@@ -10,7 +10,7 @@ unit Diff_ND;
 * Date:             18 May 2020                                                *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Angus Johnson - angusj-AT-myrealbox-DOT-com                *
-* Copyright:        © 2001-2009 Angus Johnson                                  *
+* Copyright:        ï¿½ 2001-2009 Angus Johnson                                  *
 * Updated by:       Rickard Johansson (RJ TextEd)                              *
 *                                                                              *
 * Licence to use, terms and conditions:                                        *

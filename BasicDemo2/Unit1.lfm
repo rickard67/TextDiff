@@ -1,15 +1,16 @@
 object Form1: TForm1
   Left = 353
-  Height = 365
+  Height = 548
   Top = 239
-  Width = 804
+  Width = 1206
   Caption = 'Basic Diff Demo2'
-  ClientHeight = 345
-  ClientWidth = 804
+  ClientHeight = 548
+  ClientWidth = 1206
   Color = clBtnFace
+  DesignTimePPI = 144
   Font.CharSet = ANSI_CHARSET
   Font.Color = clWindowText
-  Font.Height = -12
+  Font.Height = -18
   Font.Name = 'Arial'
   Menu = MainMenu1
   OnActivate = FormActivate
@@ -17,69 +18,70 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnResize = FormResize
   Position = poScreenCenter
-  LCLVersion = '2.0.8.0'
+  LCLVersion = '3.6.0.0'
   object Panel1: TPanel
     Left = 0
-    Height = 23
+    Height = 34
     Top = 0
-    Width = 804
+    Width = 1206
     Align = alTop
     BevelOuter = bvNone
-    ClientHeight = 23
-    ClientWidth = 804
+    ClientHeight = 34
+    ClientWidth = 1206
+    ParentBackground = False
     TabOrder = 0
     object lblFile1: TLabel
       Left = 0
-      Height = 15
-      Top = 5
-      Width = 36
+      Height = 21
+      Top = 8
+      Width = 54
       Caption = ' File1: '
       ParentColor = False
     end
     object lblFile2: TLabel
-      Left = 381
-      Height = 15
-      Top = 5
-      Width = 36
+      Left = 572
+      Height = 21
+      Top = 8
+      Width = 54
       Caption = ' File2: '
       ParentColor = False
     end
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 23
-    Top = 322
-    Width = 804
+    Height = 36
+    Top = 512
+    Width = 1206
     Panels = <    
       item
-        Width = 100
+        Width = 150
       end    
       item
-        Width = 100
+        Width = 150
       end    
       item
-        Width = 100
+        Width = 150
       end    
       item
-        Width = 100
+        Width = 150
       end>
   end
   object ResultGrid: TStringGrid
     Left = 0
-    Height = 299
-    Top = 23
-    Width = 804
+    Height = 478
+    Top = 34
+    Width = 1206
     Align = alClient
     ColCount = 4
     DefaultDrawing = False
-    DefaultRowHeight = 17
+    DefaultRowHeight = 26
     DoubleBuffered = True
     FixedCols = 0
     FixedRows = 0
     Flat = True
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -12
+    Font.Height = -18
     Font.Name = 'Courier New'
     GridLineWidth = 0
     Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goDrawFocusSelected, goRowSelect, goRowHighlight]
@@ -89,15 +91,15 @@ object Form1: TForm1
     TabOrder = 2
     OnDrawCell = ResultGridDrawCell
     ColWidths = (
-      200
-      200
-      200
-      203
+      300
+      300
+      300
+      304
     )
   end
   object MainMenu1: TMainMenu
-    left = 112
-    top = 137
+    Left = 168
+    Top = 206
     object File1: TMenuItem
       Caption = '&File'
       object Open11: TMenuItem
@@ -161,7 +163,7 @@ object Form1: TForm1
   end
   object OpenDialog1: TOpenDialog
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
-    left = 183
-    top = 119
+    Left = 275
+    Top = 179
   end
 end

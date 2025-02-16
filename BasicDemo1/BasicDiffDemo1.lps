@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units Count="5">
+      <Unit0>
+        <Filename Value="BasicDiffDemo1.dpr"/>
+        <IsPartOfProject Value="True"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="Unit1.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UsageCount Value="20"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="..\src\Diff.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="93"/>
+        <CursorPos X="57" Y="73"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\src\Diff_NP.pas"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="100"/>
+        <CursorPos X="22" Y="106"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="C:\lazarus\components\lazutils\integerlist.pas"/>
+        <UnitName Value="IntegerList"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="19"/>
+        <CursorPos X="3" Y="35"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit4>
+    </Units>
+    <JumpHistory Count="15" HistoryIndex="14">
+      <Position1>
+        <Filename Value="BasicDiffDemo1.dpr"/>
+      </Position1>
+      <Position2>
+        <Filename Value="..\src\Diff_NP.pas"/>
+        <Caret Line="150" Column="3" TopLine="141"/>
+      </Position2>
+      <Position3>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="136" Column="23" TopLine="120"/>
+      </Position3>
+      <Position4>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="74" Column="102" TopLine="65"/>
+      </Position4>
+      <Position5>
+        <Filename Value="..\src\Diff_NP.pas"/>
+        <Caret Line="147" Column="15" TopLine="136"/>
+      </Position5>
+      <Position6>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="47" Column="19" TopLine="38"/>
+      </Position6>
+      <Position7>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="49" Column="12"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="73" Column="56" TopLine="55"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\src\Diff_NP.pas"/>
+        <Caret Line="77" Column="37" TopLine="73"/>
+      </Position9>
+      <Position10>
+        <Filename Value="BasicDiffDemo1.dpr"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="135" Column="55" TopLine="129"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="47" Column="20" TopLine="35"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\src\Diff.pas"/>
+        <Caret Line="73" Column="57" TopLine="93"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\src\Diff_NP.pas"/>
+        <Caret Line="132" Column="53" TopLine="125"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\src\Diff_NP.pas"/>
+        <Caret Line="180" Column="11" TopLine="164"/>
+      </Position15>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>

@@ -12,7 +12,11 @@ uses
   {$ENDIF }
   Forms,
   Unit1 in 'Unit1.pas' {Form1},
-  HashUnit in '..\src\HashUnit.pas';
+  HashUnit in '..\src\HashUnit.pas',
+  Diff in '..\src\Diff.pas',
+  DiffTypes in '..\src\DiffTypes.pas',
+  Diff_ND in '..\src\Diff_ND.pas',
+  Diff_NP in '..\src\Diff_NP.pas';
 
 {$R *.res}
 

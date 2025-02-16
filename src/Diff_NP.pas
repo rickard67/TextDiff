@@ -74,7 +74,7 @@ uses
 {$IFnDEF FPC}
   Generics.Collections, Windows,
 {$ELSE}
-  LCLIntf, LCLType, Fgl,
+  LCLIntf, LCLType, Fgl, IntegerList,
 {$ENDIF}
   SysUtils,
   Forms,
@@ -85,9 +85,9 @@ const
   MAX_DIAGONAL = $FFFFFF; //~16 million
 
 type
-  {$IFDEF FPC}
-  TIntegerList = TFPGList<Cardinal>;
-  {$ENDIF}
+  {.$IFDEF FPC}
+  //TIntegerList = TFPGList<Cardinal>;
+  {.$ENDIF}
 
   TNPDiff = class(TComponent)
   private
@@ -102,8 +102,8 @@ type
     FDiffStats: TDiffStats;
     FLastCompareRec: TCompareRec;
     {$IFDEF FPC}
-    FList1: TIntegerList;
-    FList2: TIntegerList;
+    FList1: TCardinalList;
+    FList2: TCardinalList;
     {$ELSE}
     FList1: TList<Cardinal>;
     FList2: TList<Cardinal>;
@@ -129,7 +129,7 @@ type
 
     // Compare strings or list of Cardinals ...
     {$IFDEF FPC}
-    function Execute(const alist1, alist2: TIntegerList): boolean; overload;
+    function Execute(const alist1, alist2: TCardinalList): boolean; overload;
     {$ELSE}
     function Execute(const alist1, alist2: TList<Cardinal>): boolean; overload;
     {$ENDIF}
@@ -145,9 +145,6 @@ type
   end;
 
 implementation
-
-uses
-  System.Math;
 
 constructor TNPDiff.Create(aOwner: TComponent);
 begin
@@ -167,7 +164,7 @@ end;
 //------------------------------------------------------------------------------
 
 {$IFDEF FPC}
-function TNPDiff.Execute(const alist1, alist2: TIntegerList): boolean;
+function TNPDiff.Execute(const alist1, alist2: TCardinalList): boolean;
 {$ELSE}
 function TNPDiff.Execute(const alist1, alist2: TList<Cardinal>): boolean;
 {$ENDIF}

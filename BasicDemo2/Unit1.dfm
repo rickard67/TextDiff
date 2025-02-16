@@ -25,6 +25,7 @@ object Form1: TForm1
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitWidth = 798
     object lblFile1: TLabel
       Left = 0
       Top = 5
@@ -58,6 +59,8 @@ object Form1: TForm1
       item
         Width = 100
       end>
+    ExplicitTop = 329
+    ExplicitWidth = 798
   end
   object ResultGrid: TStringGrid
     Left = 0
@@ -81,6 +84,8 @@ object Form1: TForm1
     ParentFont = False
     TabOrder = 2
     OnDrawCell = ResultGridDrawCell
+    ExplicitWidth = 798
+    ExplicitHeight = 306
   end
   object MainMenu1: TMainMenu
     Left = 112

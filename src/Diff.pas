@@ -10,7 +10,7 @@ unit Diff;
 * Date:             12 July 2023                                               *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Rickard Johansson                                          *
-* Copyright:        © 2023 Rickard Johansson                                   *
+* Copyright:        ï¿½ 2023 Rickard Johansson                                   *
 *                                                                              *
 * Licence to use, terms and conditions:                                        *
 *                   The code in the TDiff component is released as freeware    *
@@ -44,10 +44,9 @@ uses
 {$IFnDEF FPC}
   Generics.Collections, Windows,
 {$ELSE}
-  LCLIntf, LCLType, FGL,
+  LCLIntf, LCLType, IntegerList,
 {$ENDIF}
   SysUtils,
-  Math,
   Forms,
   Classes,
   DiffTypes,
@@ -71,7 +70,7 @@ type
 
     // Compare strings or list of Cardinals ...
     {$IFDEF FPC}
-    function Execute(const alist1, alist2: TIntegerList): boolean; overload;
+    function Execute(const alist1, alist2: TCardinalList; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean; overload;
     {$ELSE}
     function Execute(const alist1, alist2: TList<Cardinal>; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
         overload;
@@ -133,7 +132,7 @@ end;
 //------------------------------------------------------------------------------
 
 {$IFDEF FPC}
-function TDiff.Execute(const alist1, alist2: TIntegerList; const aDiffAlgorithm: TDiffAlgorithm): boolean;
+function TDiff.Execute(const alist1, alist2: TCardinalList; const aDiffAlgorithm: TDiffAlgorithm): boolean;
 {$ELSE}
 function TDiff.Execute(const alist1, alist2: TList<Cardinal>; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
 {$ENDIF}

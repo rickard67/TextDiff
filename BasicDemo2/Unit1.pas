@@ -9,11 +9,11 @@ interface
 uses
 {$IFnDEF FPC}
   Generics.Collections,
+  System.Types,
 {$ELSE}
-  FGL,
+  FGL, IntegerList,
 {$ENDIF}
   SysUtils,
-  Types,
   Variants,
   Classes,
   Graphics,
@@ -30,9 +30,9 @@ uses
   ComCtrls;
 
 type
-  {$IFDEF FPC}
-  TIntegerList = TFPGList<Cardinal>;
-  {$ENDIF}
+  {.$IFDEF FPC}
+  //TIntegerList = TFPGList<Cardinal>;
+  {.$ENDIF}
 
   TForm1 = class(TForm)
     MainMenu1: TMainMenu;
@@ -82,7 +82,7 @@ type
     source1, source2: TStringList;
     result1, result2: TStringList;
     {$IFDEF FPC}
-    hashlist1, hashlist2: TIntegerList;
+    hashlist1, hashlist2: TCardinalList;
     {$ELSE}
     hashlist1, hashlist2: TList<Cardinal>;
     {$ENDIF}
@@ -111,8 +111,8 @@ begin
   result1 := TStringList.Create;
   result2 := TStringList.Create;
   {$IFDEF FPC}
-  hashlist1 := TIntegerList.Create;
-  hashlist2 := TIntegerList.Create;
+  hashlist1 := TCardinalList.Create;
+  hashlist2 := TCardinalList.Create;
   {$ELSE}
   hashlist1 := TList<Cardinal>.Create;
   hashlist2 := TList<Cardinal>.Create;
