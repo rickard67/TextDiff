@@ -57,4 +57,5 @@ Updated by    : Rickard Johansson ([RJ TextEd](https://www.rj-texted.se))
 - **13 July 2023**\
   Rewrote the component and made it easy to select the algorithm to use for comparison.\
   Fixed several issues and updated the demos.
-
+- **16 April 2025**\
+  Fixed an issue in Diff_ND when comparing strings.

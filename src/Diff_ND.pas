@@ -1,4 +1,4 @@
-unit Diff_ND;
+﻿unit Diff_ND;
 
 {$IFDEF FPC}
   {$mode delphi}{$H+}
@@ -6,8 +6,8 @@ unit Diff_ND;
 
 (*******************************************************************************
 * Component         TNDDiff                                                      *
-* Version:          5.0                                                        *
-* Date:             18 May 2020                                                *
+* Version:          5.1                                                        *
+* Date:             16 Apr 2025                                                *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Angus Johnson - angusj-AT-myrealbox-DOT-com                *
 * Copyright:        � 2001-2009 Angus Johnson                                  *
@@ -53,6 +53,8 @@ unit Diff_ND;
 * 12 July 2023       Made some changes to enable switching algorithm between   *
 *                    O(ND) and O(NP) and fixed several issues and range        *
 *                    errors.                                                   *
+*                                                                              *
+* 16 Apr 2025        Fixed an issue in Execute(const s1, s2: string)           *
 *******************************************************************************)
 
 interface
@@ -178,13 +180,6 @@ begin
     //if something doesn't match ...
     if (len1 <> 0) or (len2 <> 0) then
     begin
-      //ignore bottom of matches too ...
-      while (len1 > 0) and (len2 > 0) and (x1 > 0) and (x2 > 0) and (x1 <= Length(FStr1)) and (x2 <= Length(FStr2)) and (FStr1[x1] = FStr2[x2]) do
-      begin
-        dec(len1); dec(len2);
-        inc(x1); inc(x2);
-      end;
-
       maxOscill := min(max(len1,len2), MAX_DIAGONAL);
       fCompareList.Capacity := len1 + len2;
 
