@@ -153,6 +153,7 @@ var
   maxOscill, x1,x2, savedLen: integer;
   compareRec: PCompareRec;
   len1,len2: Integer;
+  l1,l2: Integer;
 begin
   result := not fExecuting;
   if not result then exit;
@@ -180,6 +181,28 @@ begin
     //if something doesn't match ...
     if (len1 <> 0) or (len2 <> 0) then
     begin
+      //ignore bottom of matches too ...
+      l1 := len1; l2 := len2;
+      while (len1 > 0) and (len2 > 0) and (x1 > 0) and (x2 > 0) and (x1 <= Length(FStr1)) and (x2 <= Length(FStr2)) and (FStr1[x1] = FStr2[x2]) do
+      begin
+        if (x1 < Length(FStr1)) and (x2 < Length(FStr2)) and (FStr1[x1+1] <> FStr2[x2+1]) and ((FStr1[x1] = FStr1[x1+1]) or (FStr1[x1] = FStr2[x2+1])) then
+        begin
+          // Reset if we have strings like
+          //
+          // aaabc : aabcd
+          //
+          // Character 3 is still the same 'a' in string 1 but different 'b' in string 2. The algorithm need to handle this
+          // so reset x1 and x2.
+          x1:= 1;
+          x2 := 1;
+          len1 := l1;
+          len2 := l2;
+          Break;
+        end;
+        dec(len1); dec(len2);
+        inc(x1); inc(x2);
+      end;
+
       maxOscill := min(max(len1,len2), MAX_DIAGONAL);
       fCompareList.Capacity := len1 + len2;
 
