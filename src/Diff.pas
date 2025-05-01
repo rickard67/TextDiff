@@ -1,4 +1,4 @@
-unit Diff;
+﻿unit Diff;
 
 {$IFDEF FPC}
   {$mode delphi}{$H+}
@@ -7,7 +7,7 @@ unit Diff;
 (*******************************************************************************
 * Component         TDiff                                                      *
 * Version:          1.0                                                        *
-* Date:             12 July 2023                                               *
+* Date:             1 May 2025                                                 *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Rickard Johansson                                          *
 * Copyright:        � 2023 Rickard Johansson                                   *
@@ -36,6 +36,8 @@ unit Diff;
 (*******************************************************************************
 * History:                                                                     *
 * 12 July 2023     - Original Release.                                         *
+* 1 May 2025       - Added option to ignore case when comparing strings using  *
+*                    Execute(s1, s2, aDiffAlgorithm, bIgnoreCase).             *
 *******************************************************************************)
 
 interface
@@ -75,7 +77,8 @@ type
     function Execute(const alist1, alist2: TList<Cardinal>; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
         overload;
     {$ENDIF}
-    function Execute(const s1, s2: string; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean; overload;
+    function Execute(const s1, s2: string; const aDiffAlgorithm: TDiffAlgorithm = algND; const bIgnoreCase: Boolean =
+        False): boolean; overload;
 
     // Cancel allows interrupting excessively prolonged comparisons
     procedure Cancel;
@@ -113,7 +116,8 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-function TDiff.Execute(const s1, s2: string; const aDiffAlgorithm: TDiffAlgorithm = algND): boolean;
+function TDiff.Execute(const s1, s2: string; const aDiffAlgorithm: TDiffAlgorithm = algND; const bIgnoreCase: Boolean =
+    False): boolean;
 begin
   Result := not FExecuting;
   if not Result then exit;
@@ -122,9 +126,9 @@ begin
   FDiffAlgorithm := aDiffAlgorithm;
   try
     if aDiffAlgorithm = algND then
-      FDiff_ND.Execute(s1, s2)
+      FDiff_ND.Execute(s1, s2, bIgnoreCase)
     else if aDiffAlgorithm = algNP then
-      FDiff_NP.Execute(s1, s2);
+      FDiff_NP.Execute(s1, s2, bIgnoreCase);
   finally
     FExecuting := false;
   end;

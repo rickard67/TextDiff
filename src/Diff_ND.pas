@@ -5,22 +5,22 @@
 {$ENDIF}
 
 (*******************************************************************************
-* Component         TNDDiff                                                      *
-* Version:          5.1                                                        *
-* Date:             16 Apr 2025                                                *
+* Component         TNDDiff                                                    *
+* Version:          5.20                                                       *
+* Date:             1 May 2025                                                 *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Angus Johnson - angusj-AT-myrealbox-DOT-com                *
 * Copyright:        � 2001-2009 Angus Johnson                                  *
 * Updated by:       Rickard Johansson (RJ TextEd)                              *
 *                                                                              *
 * Licence to use, terms and conditions:                                        *
-*                   The code in the TNDDiff component is released as freeware    *
+*                   The code in the TNDDiff component is released as freeware  *
 *                   provided you agree to the following terms & conditions:    *
 *                   1. the copyright notice, terms and conditions are          *
 *                   left unchanged                                             *
 *                   2. modifications to the code by other authors must be      *
 *                   clearly documented and accompanied by the modifier's name. *
-*                   3. the TNDDiff component may be freely compiled into binary  *
+*                   3. the TNDDiff component may be freely compiled into binary*
 *                   format and no acknowledgement is required. However, a      *
 *                   discrete acknowledgement would be appreciated (eg. in a    *
 *                   program's 'About Box').                                    *
@@ -55,6 +55,8 @@
 *                    errors.                                                   *
 *                                                                              *
 * 16 Apr 2025        Fixed an issue in Execute(const s1, s2: string)           *
+* 1 May 2025       - Added option to ignore case when comparing strings using  *
+*                    Execute(s1, s2, bIgnoreCase).                             *
 *******************************************************************************)
 
 interface
@@ -98,6 +100,7 @@ type
     LastCompareRec: TCompareRec;
     fDiag, bDiag: PDiags;
     fDiffStats: TDiffStats;
+    FIgnoreCase: Boolean;
     procedure InitDiagArrays(MaxOscill, len1, len2: integer);
     //nb: To optimize speed, separate functions are called for either
     //integer or character compares ...
@@ -105,6 +108,7 @@ type
     procedure AddChangeChrs(offset1, range: integer; ChangeKind: TChangeKind);
     procedure RecursiveDiffInt(offset1, offset2, len1, len2: integer);
     procedure AddChangeInts(offset1, range: integer; ChangeKind: TChangeKind);
+    function CompareChr(const ch1, ch2: Char): Boolean;
 
     function GetCompareCount: integer;
     function GetCompare(index: integer): TCompareRec;
@@ -118,7 +122,7 @@ type
     {$ELSE}
     function Execute(const alist1, alist2: TList<Cardinal>): boolean; overload;
     {$ENDIF}
-    function Execute(const s1, s2: string): boolean; overload;
+    function Execute(const s1, s2: string; const bIgnoreCase: Boolean = False): boolean; overload;
 
     // Cancel allows interrupting excessively prolonged comparisons
     procedure Cancel;
@@ -133,10 +137,14 @@ type
 
 implementation
 
+uses
+  System.Character;
+
 constructor TNDDiff.Create(aOwner: TComponent);
 begin
   inherited;
   fCompareList := TList.create;
+  FIgnoreCase := False;
 end;
 //------------------------------------------------------------------------------
 
@@ -148,7 +156,7 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-function TNDDiff.Execute(const s1, s2: string): boolean;
+function TNDDiff.Execute(const s1, s2: string; const bIgnoreCase: Boolean = False): boolean;
 var
   maxOscill, x1,x2, savedLen: integer;
   compareRec: PCompareRec;
@@ -159,6 +167,7 @@ begin
   if not result then exit;
   fExecuting := true;
   fCancelled := false;
+  FIgnoreCase := bIgnoreCase;
   try
     Clear;
     len1 := Length(s1);
@@ -173,7 +182,7 @@ begin
 
     //ignore top matches ...
     x1:= 1; x2 := 1;
-    while (len1 > 0) and (len2 > 0) and (FStr1[len1] = FStr2[len2]) do
+    while (len1 > 0) and (len2 > 0) and CompareChr(FStr1[len1], FStr2[len2]) do
     begin
       dec(len1); dec(len2);
     end;
@@ -183,16 +192,16 @@ begin
     begin
       //ignore bottom of matches too ...
       l1 := len1; l2 := len2;
-      while (len1 > 0) and (len2 > 0) and (x1 > 0) and (x2 > 0) and (x1 <= Length(FStr1)) and (x2 <= Length(FStr2)) and (FStr1[x1] = FStr2[x2]) do
+      while (len1 > 0) and (len2 > 0) and (x1 > 0) and (x2 > 0) and (x1 <= Length(FStr1)) and (x2 <= Length(FStr2)) and CompareChr(FStr1[x1], FStr2[x2]) do
       begin
-        if (x1 < Length(FStr1)) and (x2 < Length(FStr2)) and (FStr1[x1+1] <> FStr2[x2+1]) and ((FStr1[x1] = FStr1[x1+1]) or (FStr1[x1] = FStr2[x2+1])) then
+        if (x1 < Length(FStr1)) and (x2 < Length(FStr2)) and not CompareChr(FStr1[x1+1], FStr2[x2+1]) and (CompareChr(FStr1[x1], FStr1[x1+1]) or CompareChr(FStr1[x1], FStr2[x2+1])) then
         begin
           // Reset if we have strings like
           //
           // aaabc : aabcd
           //
-          // Character 3 is still the same 'a' in string 1 but different 'b' in string 2. The algorithm need to handle this
-          // so reset x1 and x2.
+          // Character 3 is still the same 'a' in string 1 but different 'b' in string 2. The algorithm needs to handle this
+          // so reset x1 and x2 to 1.
           x1:= 1;
           x2 := 1;
           len1 := l1;
@@ -407,7 +416,7 @@ begin
         x1 := fDiag[diag-1]+1;
       x2 := x1 - diag;
       while (x1 < len1-1) and (x2 < len2-1) and (offset1+x1+1 > 0) and (offset2+x2+1 > 0) and
-            (offset1+x1+1 <= Length(FStr1)) and (offset2+x2+1 <= Length(FStr2)) and (FStr1[offset1+x1+1] = FStr2[offset2+x2+1]) do
+            (offset1+x1+1 <= Length(FStr1)) and (offset2+x2+1 <= Length(FStr2)) and CompareChr(FStr1[offset1+x1+1], FStr2[offset2+x2+1]) do
       begin
         inc(x1); inc(x2);
       end;
@@ -421,7 +430,7 @@ begin
         //needed variables (ie minimize variable allocation in recursive fn) ...
         diag := x1; Oscill := x2;
         while (x1 > 0) and (x2 > 0) and (offset1+x1+1 > 0) and (offset2+x2-1 > 0) and
-              (offset1+x1-1 <= Length(FStr1)) and (offset2+x2-1 <= Length(FStr2)) and (FStr1[offset1+x1-1] = FStr2[offset2+x2-1]) do
+              (offset1+x1-1 <= Length(FStr1)) and (offset2+x2-1 <= Length(FStr2)) and CompareChr(FStr1[offset1+x1-1], FStr2[offset2+x2-1]) do
         begin
           dec(x1); dec(x2);
         end;
@@ -443,7 +452,7 @@ begin
         x1 := bDiag[diag+1]-1;
       x2 := x1 - diag;
       while (offset1+x1 > 0) and (offset2+x2 > 0) and (offset1+x1 <= Length(FStr1)) and (offset2+x2 <= Length(FStr1)) and
-            (FStr1[offset1+x1] = FStr2[offset2+x2]) do
+            CompareChr(FStr1[offset1+x1], FStr2[offset2+x2]) do
       begin
         dec(x1); dec(x2);
       end;
@@ -455,7 +464,7 @@ begin
         inc(x1);inc(x2);
         RecursiveDiffChr(offset1, offset2, x1, x2);
         while (x1 < len1) and (x2 < len2) and (offset1+x1 <= Length(FStr1)) and (offset2+x2 <= Length(FStr1)) and
-          (FStr1[offset1+x1] = FStr2[offset2+x2]) do
+              CompareChr(FStr1[offset1+x1], FStr2[offset2+x2]) do
         begin
           inc(x1); inc(x2);
         end;
@@ -844,6 +853,15 @@ procedure TNDDiff.Cancel;
 begin
   fCancelled := true;
 end;
+
+function TNDDiff.CompareChr(const ch1, ch2: Char): Boolean;
+begin
+  if FIgnoreCase then
+    Result := (ch1.ToLower = ch2.ToLower)
+  else
+    Result := (ch1 = ch2);
+end;
+
 //------------------------------------------------------------------------------
 
 end.

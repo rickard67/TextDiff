@@ -5,9 +5,9 @@
 {$ENDIF}
 
 (*******************************************************************************
-* Component         TNPDiff                                                      *
-* Version:          5.02                                                        *
-* Date:             23 May 2020                                                *
+* Component         TNPDiff                                                    *
+* Version:          5.20                                                       *
+* Date:             01 May 2025                                                *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Angus Johnson - angusj-AT-myrealbox-DOT-com                *
 * Copyright:        © 2001-2009 Angus Johnson                                  *
@@ -66,6 +66,8 @@
 * 23 May 2020      - Minor changes and fixed an issue in AddChangeChr()        *
 * 12 July 2023       Made some changes to enable switching algorithm between   *
 *                    O(ND) and O(NP).                                          *
+* 1 May 2025       - Added option to ignore case when comparing strings using  *
+*                    Execute(s1, s2, bIgnoreCase).                             *
 *******************************************************************************)
 
 interface
@@ -100,6 +102,7 @@ type
     DiagBufferB: pointer;
     DiagF, DiagB: PDiags;
     FDiffStats: TDiffStats;
+    FIgnoreCase: Boolean;
     FLastCompareRec: TCompareRec;
     {$IFDEF FPC}
     FList1: TCardinalList;
@@ -121,6 +124,7 @@ type
     function SnakeIntB(k,offset1,offset2,len1,len2: integer): boolean;
     procedure AddChangeChr(offset1, range: integer; ChangeKind: TChangeKind);
     procedure AddChangeInt(offset1, range: integer; ChangeKind: TChangeKind);
+    function CompareChr(const ch1, ch2: Char): Boolean;
     function GetCompareCount: integer;
     function GetCompare(index: integer): TCompareRec;
   public
@@ -133,7 +137,7 @@ type
     {$ELSE}
     function Execute(const alist1, alist2: TList<Cardinal>): boolean; overload;
     {$ENDIF}
-    function Execute(const s1, s2: string): boolean; overload;
+    function Execute(const s1, s2: string; const bIgnoreCase: Boolean = False): boolean; overload;
     // Cancel allows interrupting excessively prolonged comparisons
     procedure Cancel;
     procedure Clear;
@@ -146,11 +150,15 @@ type
 
 implementation
 
+uses
+  System.Character;
+
 constructor TNPDiff.Create(aOwner: TComponent);
 begin
   inherited;
   FCompareList := TList.create;
   FDiffList := TList.Create;
+  FIgnoreCase := False;
 end;
 //------------------------------------------------------------------------------
 
@@ -224,7 +232,7 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-function TNPDiff.Execute(const s1, s2: string): boolean;
+function TNPDiff.Execute(const s1, s2: string; const bIgnoreCase: Boolean = False): boolean;
 var
   i, Len1Minus1: integer;
   len1,len2: Integer;
@@ -233,6 +241,7 @@ begin
   if not Result then exit;
   FCancelled := false;
   FExecuting := true;
+  FIgnoreCase := bIgnoreCase;
   try
     Clear;
     len1 := Length(s1);
@@ -420,12 +429,12 @@ var
   p, k, delta: integer;
 begin
   //trim matching bottoms ...
-  while (len1 > 0) and (len2 > 0) and (FStr1[offset1] = FStr2[offset2]) do
+  while (len1 > 0) and (len2 > 0) and CompareChr(FStr1[offset1], FStr2[offset2]) do
   begin
     inc(offset1); inc(offset2); dec(len1); dec(len2);
   end;
   //trim matching tops ...
-  while (len1 > 0) and (len2 > 0) and (FStr1[offset1+len1-1] = FStr2[offset2+len2-1]) do
+  while (len1 > 0) and (len2 > 0) and CompareChr(FStr1[offset1+len1-1], FStr2[offset2+len2-1]) do
   begin
     dec(len1); dec(len2);
   end;
@@ -505,7 +514,7 @@ begin
     y := DiagF[k+1] else
     y := DiagF[k-1]+1;
   x := y - k;
-  while (x < len1-1) and (y < len2-1) and (FStr1[offset1+x+1] = FStr2[offset2+y+1]) do
+  while (x < len1-1) and (y < len2-1) and CompareChr(FStr1[offset1+x+1], FStr2[offset2+y+1]) do
   begin
     inc(x); inc(y);
   end;
@@ -529,7 +538,7 @@ begin
     y := DiagB[k+1]-1;
 
   x := y - k;
-  while (x >= 0) and (y >= 0) and (FStr1[offset1+x] = FStr2[offset2+y]) do
+  while (x >= 0) and (y >= 0) and CompareChr(FStr1[offset1+x], FStr2[offset2+y]) do
   begin
     dec(x); dec(y);
   end;
@@ -862,6 +871,15 @@ procedure TNPDiff.Cancel;
 begin
   FCancelled := true;
 end;
+
+function TNPDiff.CompareChr(const ch1, ch2: Char): Boolean;
+begin
+  if FIgnoreCase then
+    Result := (ch1.ToLower = ch2.ToLower)
+  else
+    Result := (ch1 = ch2);
+end;
+
 //------------------------------------------------------------------------------
 
 end.
