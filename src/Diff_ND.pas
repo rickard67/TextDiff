@@ -6,8 +6,8 @@
 
 (*******************************************************************************
 * Component         TNDDiff                                                    *
-* Version:          5.20                                                       *
-* Date:             1 May 2025                                                 *
+* Version:          5.21                                                       *
+* Date:             17 June 2025                                               *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Angus Johnson - angusj-AT-myrealbox-DOT-com                *
 * Copyright:        � 2001-2009 Angus Johnson                                  *
@@ -57,6 +57,8 @@
 * 16 Apr 2025        Fixed an issue in Execute(const s1, s2: string)           *
 * 1 May 2025       - Added option to ignore case when comparing strings using  *
 *                    Execute(s1, s2, bIgnoreCase).                             *
+*                                                                              *
+* 17 June 2025     - Minor fix in RecursiveDiffChr()                           *
 *******************************************************************************)
 
 interface
@@ -389,6 +391,10 @@ begin
     AddChangeChrs(offset1, 1, ckDelete);
     AddChangeChrs(offset1, 1, ckAdd);
     exit;
+  end
+  else if (len1 < 0) or (len2 < 0) then
+  begin
+    Exit;
   end;
 
   maxOscill := min(max(len1,len2), MAX_DIAGONAL);
