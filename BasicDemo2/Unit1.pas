@@ -99,7 +99,7 @@ var
 
 implementation
 
-uses HashUnit;
+uses Diff_HashUnit;
 
 {$R *.dfm}
 
@@ -186,14 +186,14 @@ begin
   begin
     hashlist1.Clear;
     for i := 0 to source1.Count -1 do
-      hashlist1.Add(HashLine(source1[i],
+      hashlist1.Add(DiffHashLine(source1[i],
         mnuIgnoreCase.Checked, mnuIgnoreWhiteSpace.checked));
   end;
   if right then
   begin
     hashlist2.Clear;
     for i := 0 to source2.Count -1 do
-      hashlist2.Add(HashLine(source2[i],
+      hashlist2.Add(DiffHashLine(source2[i],
         mnuIgnoreCase.Checked, mnuIgnoreWhiteSpace.checked));
   end;
 
@@ -357,7 +357,7 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-procedure AddCharToStr(var s: string; c: char; kind, lastkind: TChangeKind);
+procedure AddCharToStr(var s: string; c: char; kind, lastkind: TDiffChangeKind);
 begin
   if (Kind = lastKind) then s := s + c
   else
@@ -477,7 +477,7 @@ end;
 procedure TForm1.PreviousChanges1Click(Sender: TObject);
 var
   row: integer;
-  Kind: TChangeKind;
+  Kind: TDiffChangeKind;
 begin
   row := ResultGrid.Selection.Top;
   if row = 0 then exit;
@@ -500,7 +500,7 @@ end;
 procedure TForm1.NextChanges1Click(Sender: TObject);
 var
   row: integer;
-  Kind: TChangeKind;
+  Kind: TDiffChangeKind;
 begin
   row := ResultGrid.Selection.Top;
   if row = ResultGrid.RowCount -1 then exit;

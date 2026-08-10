@@ -18,21 +18,19 @@ uses
   Classes;
 
 const
-  MAX_DIAGONAL = $FFFFFF; //~16 million
+  DIFF_MAX_DIAGONAL = $FFFFFF; //~16 million
 
 type
   TDiffAlgorithm = (algND,algNP);
 
-  P8Bits = PByte;
+  PDiffDiags = ^TDiffDiags;
+  TDiffDiags = array [-DIFF_MAX_DIAGONAL .. DIFF_MAX_DIAGONAL] of integer;
 
-  PDiags = ^TDiags;
-  TDiags = array [-MAX_DIAGONAL .. MAX_DIAGONAL] of integer;
+  TDiffChangeKind = (ckNone, ckAdd, ckDelete, ckModify);
 
-  TChangeKind = (ckNone, ckAdd, ckDelete, ckModify);
-
-  PCompareRec = ^TCompareRec;
-  TCompareRec = record
-    Kind      : TChangeKind;
+  PDiffCompareRec = ^TDiffCompareRec;
+  TDiffCompareRec = record
+    Kind      : TDiffChangeKind;
     oldIndex1,
     oldIndex2 : integer;
     case boolean of

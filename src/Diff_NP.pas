@@ -6,8 +6,8 @@
 
 (*******************************************************************************
 * Component         TNPDiff                                                    *
-* Version:          5.20                                                       *
-* Date:             01 May 2025                                                *
+* Version:          5.21                                                       *
+* Date:             10 Aug 2026                                                *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Angus Johnson - angusj-AT-myrealbox-DOT-com                *
 * Copyright:        © 2001-2009 Angus Johnson                                  *
@@ -68,6 +68,8 @@
 *                    O(ND) and O(NP).                                          *
 * 1 May 2025       - Added option to ignore case when comparing strings using  *
 *                    Execute(s1, s2, bIgnoreCase).                             *
+* 10 Aug 2026      - Renamed a few records and pointers and fixed an issue.    *
+*                                                                              *
 *******************************************************************************)
 
 interface
@@ -83,14 +85,7 @@ uses
   Classes,
   DiffTypes;
 
-const
-  MAX_DIAGONAL = $FFFFFF; //~16 million
-
 type
-  {.$IFDEF FPC}
-  //TIntegerList = TFPGList<Cardinal>;
-  {.$ENDIF}
-
   TNPDiff = class(TComponent)
   private
     FCompareList: TList;
@@ -100,10 +95,10 @@ type
     FCompareInts: boolean; //ie are we comparing integer arrays or char arrays
     DiagBufferF: pointer;
     DiagBufferB: pointer;
-    DiagF, DiagB: PDiags;
+    DiagF, DiagB: PDiffDiags;
     FDiffStats: TDiffStats;
     FIgnoreCase: Boolean;
-    FLastCompareRec: TCompareRec;
+    FLastCompareRec: TDiffCompareRec;
     {$IFDEF FPC}
     FList1: TCardinalList;
     FList2: TCardinalList;
@@ -122,11 +117,11 @@ type
     function SnakeChrB(k,offset1,offset2,len1,len2: integer): boolean;
     function SnakeIntF(k,offset1,offset2,len1,len2: integer): boolean;
     function SnakeIntB(k,offset1,offset2,len1,len2: integer): boolean;
-    procedure AddChangeChr(offset1, range: integer; ChangeKind: TChangeKind);
-    procedure AddChangeInt(offset1, range: integer; ChangeKind: TChangeKind);
+    procedure AddChangeChr(offset1, range: integer; ChangeKind: TDiffChangeKind);
+    procedure AddChangeInt(offset1, range: integer; ChangeKind: TDiffChangeKind);
     function CompareChr(const ch1, ch2: Char): Boolean;
     function GetCompareCount: integer;
-    function GetCompare(index: integer): TCompareRec;
+    function GetCompare(index: integer): TDiffCompareRec;
   public
     constructor Create(aOwner: TComponent); override;
     destructor Destroy; override;
@@ -144,7 +139,7 @@ type
     property Cancelled: boolean read FCancelled;
     property CompareList: TList read FCompareList write FCompareList;
     property Count: integer read GetCompareCount;
-    property Compares[index: integer]: TCompareRec read GetCompare; default;
+    property Compares[index: integer]: TDiffCompareRec read GetCompare; default;
     property DiffStats: TDiffStats read FDiffStats;
   end;
 
@@ -219,7 +214,7 @@ begin
 
     //correct the occasional missed match ...
     for i := 1 to count -1 do
-      with PCompareRec(FCompareList[i])^ do
+      with PDiffCompareRec(FCompareList[i])^ do
         if (Kind = ckModify) and (int1 = int2) then
         begin
           Kind := ckNone;
@@ -276,7 +271,7 @@ begin
 
     //correct the occasional missed match ...
     for i := 1 to count -1 do
-      with PCompareRec(FCompareList[i])^ do
+      with PDiffCompareRec(FCompareList[i])^ do
         if (Kind = ckModify) and (chr1 = chr2) then
         begin
           Kind := ckNone;
@@ -332,12 +327,12 @@ var
   i: integer;
 begin
   //assumes that top and bottom matches have been excluded
-  P8Bits(DiagF) := P8Bits(DiagBufferF) - sizeof(integer)*(MAX_DIAGONAL-(len1+1));
+  PByte(DiagF) := PByte(DiagBufferF) - sizeof(integer)*(DIFF_MAX_DIAGONAL-(len1+1));
   for i := - (len1+1) to (len2+1) do
     DiagF^[i] := -MAXINT;
   DiagF^[1] := -1;
 
-  P8Bits(DiagB) := P8Bits(DiagBufferB) - sizeof(integer)*(MAX_DIAGONAL-(len1+1));
+  PByte(DiagB) := PByte(DiagBufferB) - sizeof(integer)*(DIFF_MAX_DIAGONAL-(len1+1));
   for i := - (len1+1) to (len2+1) do
     DiagB^[i] := MAXINT;
   DiagB^[len2-len1+1] := len2;
@@ -602,10 +597,10 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-procedure TNPDiff.AddChangeChr(offset1, range: integer; ChangeKind: TChangeKind);
+procedure TNPDiff.AddChangeChr(offset1, range: integer; ChangeKind: TDiffChangeKind);
 var
   i,j: integer;
-  compareRec: PCompareRec;
+  compareRec: PDiffCompareRec;
 begin
   //first, add any unchanged items into this list ...
   if FLastCompareRec.oldIndex1 < 0 then FLastCompareRec.oldIndex1 := 0;
@@ -659,14 +654,14 @@ begin
             if Kind = ckDelete then
             begin
               j := FCompareList.Count -1;
-              while (j > 0) and (PCompareRec(FCompareList[j-1]).Kind = ckDelete) do
+              while (j > 0) and (PDiffCompareRec(FCompareList[j-1]).Kind = ckDelete) do
                 dec(j);
-              PCompareRec(FCompareList[j]).Kind := ckModify;
+              PDiffCompareRec(FCompareList[j]).Kind := ckModify;
               dec(FDiffStats.deletes);
               inc(FDiffStats.modifies);
               inc(FLastCompareRec.oldIndex2);
-              PCompareRec(FCompareList[j]).oldIndex2 := FLastCompareRec.oldIndex2;
-              PCompareRec(FCompareList[j]).chr2 := FStr2[oldIndex2];
+              PDiffCompareRec(FCompareList[j]).oldIndex2 := FLastCompareRec.oldIndex2;
+              PDiffCompareRec(FCompareList[j]).chr2 := FStr2[oldIndex2];
               if j = FCompareList.Count-1 then
                 FLastCompareRec.Kind := ckModify;
               continue;
@@ -695,14 +690,14 @@ begin
             if Kind = ckAdd then
             begin
               j := FCompareList.Count -1;
-              while (j > 0) and (PCompareRec(FCompareList[j-1]).Kind = ckAdd) do
+              while (j > 0) and (PDiffCompareRec(FCompareList[j-1]).Kind = ckAdd) do
                 dec(j);
-              PCompareRec(FCompareList[j]).Kind := ckModify;
+              PDiffCompareRec(FCompareList[j]).Kind := ckModify;
               dec(FDiffStats.adds);
               inc(FDiffStats.modifies);
               inc(FLastCompareRec.oldIndex1);
-              PCompareRec(FCompareList[j]).oldIndex1 := FLastCompareRec.oldIndex1;
-              PCompareRec(FCompareList[j]).chr1 := FStr1[oldIndex1];
+              PDiffCompareRec(FCompareList[j]).oldIndex1 := FLastCompareRec.oldIndex1;
+              PDiffCompareRec(FCompareList[j]).chr1 := FStr1[oldIndex1];
               if j = FCompareList.Count-1 then
                 FLastCompareRec.Kind := ckModify;
               continue;
@@ -723,16 +718,18 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-procedure TNPDiff.AddChangeInt(offset1, range: integer; ChangeKind: TChangeKind);
+procedure TNPDiff.AddChangeInt(offset1, range: integer; ChangeKind: TDiffChangeKind);
 var
   i,j: integer;
-  compareRec: PCompareRec;
+  compareRec: PDiffCompareRec;
 begin
   //first, add any unchanged items into this list ...
   while (FLastCompareRec.oldIndex1 < offset1 -1) do
   begin
     with FLastCompareRec do
     begin
+      chr1 := #0;
+      chr2 := #0;
       Kind := ckNone;
       inc(oldIndex1);
       inc(oldIndex2);
@@ -753,6 +750,8 @@ begin
       begin
         with FLastCompareRec do
         begin
+          chr1 := #0;
+          chr2 := #0;
           Kind := ckNone;
           inc(oldIndex1);
           inc(oldIndex2);
@@ -778,18 +777,19 @@ begin
             if Kind = ckDelete then
             begin
               j := FCompareList.Count -1;
-              while (j > 0) and (PCompareRec(FCompareList[j-1]).Kind = ckDelete) do
+              while (j > 0) and (PDiffCompareRec(FCompareList[j-1]).Kind = ckDelete) do
                 dec(j);
-              PCompareRec(FCompareList[j]).Kind := ckModify;
+              PDiffCompareRec(FCompareList[j]).Kind := ckModify;
               dec(FDiffStats.deletes);
               inc(FDiffStats.modifies);
               inc(FLastCompareRec.oldIndex2);
-              PCompareRec(FCompareList[j]).oldIndex2 := FLastCompareRec.oldIndex2;
-              PCompareRec(FCompareList[j]).int2 := Integer(FList2[oldIndex2]);
+              PDiffCompareRec(FCompareList[j]).oldIndex2 := FLastCompareRec.oldIndex2;
+              PDiffCompareRec(FCompareList[j]).int2 := Integer(FList2[oldIndex2]);
               if j = FCompareList.Count-1 then FLastCompareRec.Kind := ckModify;
               continue;
             end;
-
+            chr1 := #0;
+            chr2 := #0;
             Kind := ckAdd;
             int1 := $0;
             inc(oldIndex2);
@@ -814,18 +814,19 @@ begin
             if Kind = ckAdd then
             begin
               j := FCompareList.Count -1;
-              while (j > 0) and (PCompareRec(FCompareList[j-1]).Kind = ckAdd) do
+              while (j > 0) and (PDiffCompareRec(FCompareList[j-1]).Kind = ckAdd) do
                 dec(j);
-              PCompareRec(FCompareList[j]).Kind := ckModify;
+              PDiffCompareRec(FCompareList[j]).Kind := ckModify;
               dec(FDiffStats.adds);
               inc(FDiffStats.modifies);
               inc(FLastCompareRec.oldIndex1);
-              PCompareRec(FCompareList[j]).oldIndex1 := FLastCompareRec.oldIndex1;
-              PCompareRec(FCompareList[j]).int1 := Integer(FList1[oldIndex1]);
+              PDiffCompareRec(FCompareList[j]).oldIndex1 := FLastCompareRec.oldIndex1;
+              PDiffCompareRec(FCompareList[j]).int1 := Integer(FList1[oldIndex1]);
               if j = FCompareList.Count-1 then FLastCompareRec.Kind := ckModify;
               continue;
             end;
-
+            chr1 := #0;
+            chr2 := #0;
             Kind := ckDelete;
             int2 := $0;
             inc(oldIndex1);
@@ -847,7 +848,7 @@ var
   i: integer;
 begin
   for i := 0 to FCompareList.Count-1 do
-    dispose(PCompareRec(FCompareList[i]));
+    dispose(PDiffCompareRec(FCompareList[i]));
   FCompareList.clear;
   FLastCompareRec.Kind := ckNone;
   FLastCompareRec.oldIndex1 := -1;
@@ -865,9 +866,9 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-function TNPDiff.GetCompare(index: integer): TCompareRec;
+function TNPDiff.GetCompare(index: integer): TDiffCompareRec;
 begin
-  Result := PCompareRec(FCompareList[index])^;
+  Result := PDiffCompareRec(FCompareList[index])^;
 end;
 //------------------------------------------------------------------------------
 

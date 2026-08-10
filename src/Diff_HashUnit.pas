@@ -1,4 +1,4 @@
-﻿unit HashUnit;
+﻿unit Diff_HashUnit;
 
 {$IFDEF FPC}
   {$mode delphi}{$H+}
@@ -8,7 +8,7 @@
 // Application:     TextDiff                                                   .
 // Module:          HashUnit                                                   .
 // Version:         5.0                                                        .
-// Date:            18-MAY-2020                                                .
+// Date:            10-Aug-2026                                                .
 // Target:          Win32, Delphi 10.x                                         .
 // Author:          Angus Johnson - angusj-AT-myrealbox-DOT-com                .
 // Updates by:      Rickard Johansson (RJ TextEd)                              .
@@ -32,7 +32,11 @@ interface
 uses
   SysUtils;
 
-function HashLine(const line: string; IgnoreCase, IgnoreBlanks: boolean): Cardinal;
+type
+  TIgnoreSpaceMethod = (spNone,spAll,spLeading,spTrailing,spTrim);
+
+function DiffHashLine(const line: string; IgnoreCase: boolean; const IgnoreBlanks: boolean; const IgnoreBlanksMethod:
+    TIgnoreSpaceMethod = spAll): Cardinal;
 
 implementation
 
@@ -136,32 +140,114 @@ begin
   result := not result;
 end;
 
-function HashLine(const line: string; IgnoreCase, IgnoreBlanks: boolean): Cardinal;
+function RemoveWhiteSpaces(const line: string): string;
 var
   i,j,len: integer;
+begin
+  Result := line;
+  len := Length(line);
+  i := 1;
+  j := 1;
+  while i <= len do
+  begin
+    if not line[i].IsWhiteSpace then
+    begin
+      Result[j] := line[i];
+      inc(j);
+    end;
+    inc(i);
+  end;
+  len := j-1;
+  setlength(Result,len);
+end;
+
+function RemoveLeadingWhiteSpaces(const line: string): string;
+var
+  i,len: integer;
+begin
+  len := Length(line);
+  i := 1;
+  while (i <= len) and line[i].IsWhiteSpace do Inc(i);
+  if i > 0 then
+    Result := Copy(line,i,Len)
+  else
+    Result := line;
+end;
+
+function RemoveTrailingSpaces(const line: string): string;
+var
+  i,n: Integer;
+begin
+  n := Length(line);
+
+  // Ignore line endings
+  while (n > 0) and CharInSet(line[n], [#13,#10]) do Dec(n);
+
+  i := n;
+  if (i > 0) and (line[i] > ' ') then
+  begin
+    // Nothing to trim at the end of string
+    Result := line;
+  end
+  else
+  begin
+    while (i > 0) and line[i].IsWhiteSpace do Dec(i);
+
+    // Did we have any line endings?
+    if (n < Length(line)) then
+    begin
+      // Add ignored line endings
+      Result := Copy(line,1,i) + Copy(line,n+1,Length(line))
+    end
+    else
+    begin
+      // No line endings found
+      Result := Copy(line,1,i);
+    end;
+  end;
+end;
+
+// -------------------------------------------------------------------
+// HashLine() - return a hash value for the string
+//
+// IgnoreBlanksMethod: spAll,spLeading,spTrailing,spTrim
+//
+// -------------------------------------------------------------------
+function DiffHashLine(const line: string; IgnoreCase: boolean; const IgnoreBlanks: boolean; const IgnoreBlanksMethod:
+    TIgnoreSpaceMethod = spAll): Cardinal;
+var
   s: string;
 begin
   s := line;
-  len := Length(line);
+
   if IgnoreBlanks then
   begin
-    i := 1;
-    j := 1;
-    while i <= len do
+    // Ignore white spaces (tabs, space, non-breaking space ...)
+    if IgnoreBlanksMethod = spAll then
     begin
-      if not IsWhiteSpace(line[i]) then
+      // Remove all white spaces in the string
+      s := RemoveWhiteSpaces(s);
+    end
+    else
+    begin
+      if IgnoreBlanksMethod in [spLeading,spTrim] then
       begin
-        s[j] := line[i];
-        inc(j);
+        // Remove leading white spaces
+        s := RemoveLeadingWhiteSpaces(s);
       end;
-      inc(i);
+      if IgnoreBlanksMethod in [spTrailing,spTrim] then
+      begin
+        // Remove trailing white spaces
+        s := RemoveTrailingSpaces(s);
+      end;
     end;
-    len := j-1;
-    setlength(s,len);
   end;
+
+  // Ignore case
   if IgnoreCase then
     s := s.ToUpper;
-  result := CalcCRC32(s, len);
+
+  result := CalcCRC32(s, Length(s));
 end;
 
 

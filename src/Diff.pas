@@ -7,7 +7,7 @@
 (*******************************************************************************
 * Component         TDiff                                                      *
 * Version:          1.0                                                        *
-* Date:             1 May 2025                                                 *
+* Date:             10 aug 2026                                                *
 * Compilers:        Delphi 10.x                                                *
 * Author:           Rickard Johansson                                          *
 * Copyright:        � 2023 Rickard Johansson                                   *
@@ -38,6 +38,9 @@
 * 12 July 2023     - Original Release.                                         *
 * 1 May 2025       - Added option to ignore case when comparing strings using  *
 *                    Execute(s1, s2, aDiffAlgorithm, bIgnoreCase).             *
+* 10 Aug 2026      - Renamed a few records and pointers and made minor         *
+*                    changes.                                                  *
+*                                                                              *
 *******************************************************************************)
 
 interface
@@ -64,7 +67,7 @@ type
     FDiff_ND: TNDDiff;
     FDiff_NP: TNPDiff;
     function GetCompareCount: integer;
-    function GetCompare(index: integer): TCompareRec;
+    function GetCompare(index: integer): TDiffCompareRec;
     function GetDiffStats: TDiffStats;
   public
     constructor Create(aOwner: TComponent); override;
@@ -85,7 +88,7 @@ type
     procedure Clear;
     property Cancelled: boolean read FCancelled;
     property Count: integer read GetCompareCount;
-    property Compares[index: integer]: TCompareRec read GetCompare; default;
+    property Compares[index: integer]: TDiffCompareRec read GetCompare; default;
     property DiffAlgorithm: TDiffAlgorithm read FDiffAlgorithm write FDiffAlgorithm;
     property DiffStats: TDiffStats read GetDiffStats;
   end;
@@ -166,12 +169,12 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-function TDiff.GetCompare(index: integer): TCompareRec;
+function TDiff.GetCompare(index: integer): TDiffCompareRec;
 begin
   if FDiffAlgorithm = algND then
-    Result := PCompareRec(FDiff_ND.CompareList[index])^
+    Result := PDiffCompareRec(FDiff_ND.CompareList[index])^
   else if FDiffAlgorithm = algNP then
-    Result := PCompareRec(FDiff_NP.CompareList[index])^;
+    Result := PDiffCompareRec(FDiff_NP.CompareList[index])^;
 end;
 //------------------------------------------------------------------------------
 
